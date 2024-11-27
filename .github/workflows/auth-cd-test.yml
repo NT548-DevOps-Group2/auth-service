@@ -31,13 +31,13 @@ jobs:
                 uses: docker/build-push-action@v5
                 with:
                     push: true
-                    tags: tonyq2k3/auth-microservice:test
+                    tags: tonyq2k3/auth-microservice:test-${{ github.sha }}
 
             - 
                 name: Run Trivy vulnerability scanner
                 uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
                 with:
-                    image-ref: 'tonyq2k3/auth-microservice:test'
+                    image-ref: 'tonyq2k3/auth-microservice:test-${{ github.sha }}'
                     format: 'sarif'
                     output: 'trivy-results.sarif'
                     severity: 'CRITICAL,HIGH'
@@ -48,28 +48,28 @@ jobs:
                 with:
                     sarif_file: 'trivy-results.sarif'
         
-    # Update-manifest:
-    #     runs-on: ubuntu-latest
-    #     needs: Build-image
-    #     if: ${{ success() }}
-    #     steps:
-    #         -
-    #             name: Checkout infrastructure repo
-    #             uses: actions/checkout@v3
-    #             with:
-    #                 repository: NT548-DevOps-Group2/infrastructures
-    #                 ref: 'main'
-    #                 token: ${{ secrets.GIT_TOKEN }}
-
-    #         -   
-    #             name: Setup image tag
-    #             run: echo "SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
-    #         -
-    #             name: Update frontend manifest
-    #             run: |
-    #                 git config --global user.email "ntbquoc2015@gmail.com"
-    #                 git config --global user.name "TonyQ2k3"
-    #                 sed -i 's#tonyq2k3/auth-microservice:[^[:space:]]*$#tonyq2k3/auth-microservice:test-${{ github.sha }}#g' ./test/microservices/auth-service-deploy.yaml
-    #                 git add ./test/microservices/auth-service-deploy.yaml
-    #                 git commit -m "Update auth service version to test-${{ github.sha }} in test environment"
-    #                 git push origin main
+    Update-manifest:
+        permissions:
+            contents: write
+        name: Update manifest
+        runs-on: ubuntu-latest
+        # Needs build image job to be successful
+        needs: Build-image
+        if: ${{ success() }}
+        steps:
+            -
+                name: Checkout infrastructure repo
+                uses: actions/checkout@v3
+                with:
+                    repository: NT548-DevOps-Group2/infrastructures
+                    ref: 'main'
+                    token: ${{ secrets.GIT_TOKEN }}
+            -
+                name: Update auth service manifest
+                run: |
+                    git config --global user.email "ntbquoc2015@gmail.com"
+                    git config --global user.name "TonyQ2k3"
+                    sed -i 's#tonyq2k3/auth-microservice:[^[:space:]]*$#tonyq2k3/auth-microservice:test-${{ github.sha }}#g' ./test/microservices/auth-service-deploy.yaml
+                    git add ./test/microservices/auth-service-deploy.yaml
+                    git commit -m "Update auth service version to test-${{ github.sha }} in test environment"
+                    git push origin main

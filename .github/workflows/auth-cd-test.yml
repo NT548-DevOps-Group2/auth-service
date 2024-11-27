@@ -11,6 +11,10 @@ on:
 
 jobs:
     Build-image:
+        permissions:
+            contents: read 
+            security-events: write
+        name: Build and scan image
         runs-on: ubuntu-latest
         steps:
             # -
